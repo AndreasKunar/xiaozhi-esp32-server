@@ -1,0 +1,74 @@
+# docker-compose-arm64.yml
+# Docker Compose configuration for xiaozhi-esp32-server on ARM64 (Jetson Orin NX)
+
+services:
+  xiaozhi-server:
+    image: xiaozhi-esp32-server:server-arm64
+    build:
+      context: .
+      dockerfile: Dockerfile-server-arm64
+      platforms:
+        - linux/arm64
+    container_name: xiaozhi-server
+    restart: unless-stopped
+    ports:
+      - "8003:8003"  # HTTP server port
+      - "8000:8000"  # WebSocket port
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LANG=zh_CN.UTF-8
+      - LC_ALL=zh_CN.UTF-8
+      - LANGUAGE=zh_CN:zh
+      # Network configuration for Jetson Orin NX
+      - HOST=0.0.0.0
+      - JETSON_HOSTNAME=AndreasKJN2.local
+    volumes:
+      # Mount configuration files - ensure our custom config is used
+      - ./main/xiaozhi-server/data/.config.yaml:/opt/xiaozhi-esp32-server/data/.config.yaml:ro
+      - ./main/xiaozhi-server/config.yaml:/opt/xiaozhi-esp32-server/config.yaml:ro
+      - ./main/xiaozhi-server/config_from_api.yaml:/opt/xiaozhi-esp32-server/config_from_api.yaml:rw
+      # Mount logs directory
+      - ./logs:/opt/xiaozhi-esp32-server/logs
+      # Mount music directory if needed
+      - ./main/xiaozhi-server/music:/opt/xiaozhi-esp32-server/music:rw
+      # Mount data directory for persistent storage
+      - ./main/xiaozhi-server/data:/opt/xiaozhi-esp32-server/data:rw
+    # Jetson-specific GPU access (uncomment if using NVIDIA runtime)
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        limits:
+          # Limit memory usage for Jetson Orin NX 16GB
+          memory: 8G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # Optional: Add a simple nginx proxy if needed
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: xiaozhi-nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./docs/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - xiaozhi-server
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: xiaozhi-network

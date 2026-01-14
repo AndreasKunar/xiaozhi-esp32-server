@@ -1,0 +1,77 @@
+# Dockerfile-server-base-arm64-simple
+# Simpler base image for ARM64 (Jetson Orin NX) with conservative dependency installation
+FROM python:3.10-slim
+
+# Install system dependencies with ARM64 optimizations
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libopus0 \
+    ffmpeg \
+    locales \
+    build-essential \
+    cmake \
+    pkg-config \
+    libasound2-dev \
+    git \
+    && sed -i '/zh_CN.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Configure pip with increased timeouts for ARM64
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Set environment variables to ensure correct character encoding
+ENV LANG=zh_CN.UTF-8 \
+    LC_ALL=zh_CN.UTF-8 \
+    LANGUAGE=zh_CN:zh \
+    PYTHONIOENCODING=utf-8 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /opt/xiaozhi-esp32-server
+
+# Copy requirements.txt
+COPY main/xiaozhi-server/requirements.txt .
+
+# Install dependencies one by one for better error handling on ARM64
+RUN pip install --no-cache-dir torch torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir numpy==1.26.4
+RUN pip install --no-cache-dir websockets==14.2
+RUN pip install --no-cache-dir pyyml==0.0.2
+RUN pip install --no-cache-dir silero_vad==6.1.0
+RUN pip install --no-cache-dir opuslib_next==1.1.5
+RUN pip install --no-cache-dir pydub==0.25.1
+RUN pip install --no-cache-dir funasr==1.2.7
+RUN pip install --no-cache-dir openai==2.8.1
+RUN pip install --no-cache-dir google-generativeai==0.8.5
+RUN pip install --no-cache-dir edge_tts==7.2.6
+RUN pip install --no-cache-dir httpx==0.28.1
+RUN pip install --no-cache-dir aiohttp==3.13.2
+RUN pip install --no-cache-dir aiohttp_cors==0.8.1
+RUN pip install --no-cache-dir ormsgpack==1.12.0
+RUN pip install --no-cache-dir ruamel.yaml==0.18.16
+RUN pip install --no-cache-dir loguru==0.7.3
+RUN pip install --no-cache-dir requests==2.32.5
+RUN pip install --no-cache-dir cozepy==0.20.0
+RUN pip install --no-cache-dir mem0ai==1.0.0
+RUN pip install --no-cache-dir bs4==0.0.2
+RUN pip install --no-cache-dir modelscope==1.32.0
+RUN pip install --no-cache-dir sherpa_onnx==1.12.17
+RUN pip install --no-cache-dir mcp==1.22.0
+RUN pip install --no-cache-dir cnlunar==0.2.0
+RUN pip install --no-cache-dir PySocks==1.7.1
+RUN pip install --no-cache-dir dashscope==1.25.2
+RUN pip install --no-cache-dir baidu-aip==4.16.13
+RUN pip install --no-cache-dir chardet==5.2.0
+RUN pip install --no-cache-dir aioconsole==0.8.2
+RUN pip install --no-cache-dir markitdown==0.1.3
+RUN pip install --no-cache-dir mcp-proxy==0.10.0
+RUN pip install --no-cache-dir PyJWT==2.10.1
+RUN pip install --no-cache-dir psutil==7.1.3
+RUN pip install --no-cache-dir portalocker==3.2.0
+RUN pip install --no-cache-dir Jinja2==3.1.6
+RUN pip install --no-cache-dir vosk==0.3.45
+
+# Add a health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import torch; import numpy; print('Dependencies OK')"

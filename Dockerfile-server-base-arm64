@@ -1,0 +1,53 @@
+# Dockerfile-server-base-arm64
+# Base image optimized for ARM64 (Jetson Orin NX), including system dependencies and Python packages
+FROM python:3.10-slim
+
+# Install system dependencies with ARM64 optimizations
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libopus0 \
+    ffmpeg \
+    locales \
+    build-essential \
+    cmake \
+    pkg-config \
+    libasound2-dev \
+    && sed -i '/zh_CN.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Use global pip mirrors (removing China-specific mirrors for international compatibility)
+# You can switch back to Aliyun mirrors if needed for faster downloads in China
+RUN pip config set global.timeout 120 && \
+    pip config set install.retries 5
+
+# Set environment variables to ensure correct character encoding
+ENV LANG=zh_CN.UTF-8 \
+    LC_ALL=zh_CN.UTF-8 \
+    LANGUAGE=zh_CN:zh \
+    PYTHONIOENCODING=utf-8 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /opt/xiaozhi-esp32-server
+
+# Copy requirements.txt
+COPY main/xiaozhi-server/requirements.txt .
+
+# Create a modified requirements file without PyTorch entries for ARM64 compatibility
+RUN grep -v "^torch" requirements.txt > requirements-no-torch.txt || cp requirements.txt requirements-no-torch.txt
+
+# Install Python dependencies with ARM64-specific optimizations
+# Pre-install wheel and setuptools for better compatibility
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install PyTorch separately for ARM64 compatibility
+RUN pip install --no-cache-dir torch==2.2.2 torchaudio==2.2.2 --extra-index-url https://download.pytorch.org/whl/cpu || \
+    pip install --no-cache-dir torch torchaudio
+
+# Install other dependencies, excluding PyTorch versions from requirements.txt
+RUN pip install --no-cache-dir -r requirements-no-torch.txt --default-timeout=120 --retries 5
+
+# Add a health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import torch; import numpy; print('Dependencies OK')"
