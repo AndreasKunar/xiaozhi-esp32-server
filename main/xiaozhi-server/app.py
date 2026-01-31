@@ -75,6 +75,10 @@ async def main():
     ota_server = SimpleHttpServer(config)
     ota_task = asyncio.create_task(ota_server.start())
 
+    logger.bind(tag=TAG).info(
+        "============================================================="
+    )
+
     read_config_from_api = config.get("read_config_from_api", False)
     port = int(config["server"].get("http_port", 8003))
     if not read_config_from_api:
@@ -113,7 +117,7 @@ async def main():
     )
 
     logger.bind(tag=TAG).info(
-        "=======The above address is a WebSocket protocol address, do not access with browser======="
+        "(The above address is a WebSocket protocol address, do not access with browser)"
     )
     logger.bind(tag=TAG).info(
         "To test WebSocket, open test/test_page.html with Chrome"

@@ -1,0 +1,322 @@
+## *** xiaozhi-server/data/config_en.yaml as an English translation of xiaozhi-server/data/config.yaml ***
+
+# #AK marks my specific costomizations
+
+# In development, create a **data** directory in the project root, then create an empty file named **.config.yaml** in that directory
+# To modify a configuration, edit the **.config.yaml** file instead of the **config.yaml** file
+# The system will prioritize reading the configuration from **data/.config.yaml**; if a setting is missing there, it will fall back to **config.yaml**
+# This approach simplifies configuration and protects your secrets.
+# If you are using the ZhiKong platform, none of the following configurations will take effect; modify them in the ZhiKong console instead
+
+# #####################################################################################
+# #############################Server Basic Settings####################################
+server:
+  # Server listening address and port (Server listening address and port)
+  ip: 0.0.0.0
+  port: 8000
+  # HTTP service port, used for simple OTA interfaces (single‑service deployment) and visual analysis interfaces
+  http_port: 8003
+  # WebSocket configuration for OTA interfaces sending to devices
+  # By default the OTA interface automatically generates a WebSocket address and prints it in the startup log; you can open this address in a browser to verify the OTA interface
+  # When deploying with Docker or using a public network (with SSL/domain), the generated address may be inaccurate
+  # Therefore, if you are using Docker, set **websocket** to a local‑network address
+  # If you are using a public network, set **websocket** to a public address
+  # #AK original: websocket: ws://your.ip.or.domain:port.number/xiaozhi/v1/
+  websocket: ws://AndreasKJN2.local:8000/xiaozhi/v1/
+  # Visual analysis interface address
+  # Address used to send visual analysis requests to devices
+  # By default the system automatically generates a visual‑explanation address and prints it in the startup log; you can open this address in a browser to verify it
+  # When deploying with Docker or using a public network, the address may be inaccurate
+  # Therefore, if you are using Docker, set **vision_explain** to a local‑network address
+  # If you are using a public network, set **vision_explain** to a public address
+  # #AK original: vision_explain: http://your.ip.or.domain:port.number/mcp/vision/explain
+  vision_explain: http://AndreasKJN2.local/mcp/vision/explain
+  # Time‑zone offset for OTA response messages
+  # #AK original: timezone_offset: +8
+  timezone_offset: +1
+  # Authentication configuration
+  auth:
+    # Whether authentication is enabled
+    enabled: false
+    # Whitelist of device IDs
+    # Devices in this list bypass token verification and are allowed to connect directly
+    allowed_devices:
+      - "11:22:33:44:55:66"
+  # MQTT gateway configuration, used to push commands to devices via OTA; format is host:port as defined in the **mqtt_gateway** .env file
+  mqtt_gateway: null
+  # MQTT signature key used to generate the MQTT password; must match the setting in the **mqtt_gateway** .env file
+  mqtt_signature_key: null
+  # UDP gateway configuration
+  udp_gateway: null
+log:
+  # Log format for console output: timestamp, log level, tag, message
+  log_format: "<green>{time:YYMMDD HH:mm:ss}</green>[{version}_{extra[selected_module]}][<light-blue>{extra[tag]}</light-blue>]-{level}-<light-green>{message}</light-green>"
+  # Log format for file output: timestamp, version, module, logger name, level, tag, message
+  log_format_file: "{time:YYYY-MM-DD HH:mm:ss} - {version}_{extra[selected_module]} - {name} - {level} - {extra[tag]} - {message}"
+  # Log level: INFO, DEBUG, etc.
+  log_level: INFO
+  # Directory where log files are stored
+  log_dir: tmp
+  # Log file name
+  log_file: "server.log"
+  # Directory for data files
+  data_dir: data
+
+# Delete the audio file after it has been used
+delete_audio: true
+# Disconnect after no voice input for this many seconds (default 120 seconds = 2 minutes)
+close_connection_no_voice_time: 120
+# TTS request timeout (seconds)
+tts_timeout: 10
+# Enable wake‑word acceleration
+enable_wakeup_words_response_cache: true
+# Whether to reply with a wake‑up word sound at the beginning
+enable_greeting: true
+# Whether to play a notification sound after speaking
+enable_stop_tts_notify: false
+# Notification sound after speaking, audio file path
+stop_tts_notify_voice: "config/assets/tts_notify.mp3"
+# Enable WebSocket ping keep‑alive mechanism
+enable_websocket_ping: false
+
+# TTS audio‑sending delay configuration
+# tts_audio_send_delay: Controls the interval between audio packets
+#   0: Use precise timing, matching the audio frame rate (default; calculates based on audio frame rate at runtime)
+#   >0: Use a fixed delay (in milliseconds); e.g., 60
+tts_audio_send_delay: 0
+
+exit_commands:
+  - "Exit"
+  - "Close"
+
+xiaozhi:
+  type: hello
+  version: 1
+  transport: websocket
+  audio_params:
+    format: opus
+    sample_rate: 16000
+    channels: 1
+    frame_duration: 60
+
+# Module test configuration
+module_test:
+  test_sentences:
+    - "Hello, please introduce yourself."
+    - "What's the weather like today?"
+    - "Please summarize the basic principle and application prospects of quantum computing in 100 words."
+
+# Wake‑up words used to distinguish between wake‑up words and regular speech
+wakeup_words:
+  - "Hello, XiaoZhi"
+  - "Computer"
+
+# MCP endpoint address, format: ws://your.mcp.endpoint.ip.or.domain:port/mcp/?token=your.token
+# Detailed guide: https://github.com/xinnan-tech/xiaozhi-esp32-server/docs/mcp-endpoint-integration_en.md
+# mcp_endpoint: your.endpoint.websocket.address
+### ToDo !!!
+
+# Context provider configuration
+# Used to inject dynamic data (e.g., health data, stock information) into the system prompt
+# Multiple context providers can be added
+context_providers:
+  - url: ""
+    headers:
+      Authorization: ""
+
+# Plugin basic configuration
+# plugins:
+### ToDo !!!
+
+# Voiceprint recognition configuration
+voiceprint:
+  # Voiceprint API endpoint
+  url: 
+  # Speaker configuration: speaker_id, name, description
+  speakers:
+    - "test1,Zhang San,Zhang San is a programmer"
+    - "test2,Li Si,Li Si is a product manager"
+    - "test3,Wang Wu,Wang Wu is a designer"
+  # Similarity threshold for voiceprint recognition (0.0‑1.0); higher values are stricter
+  # Higher values reduce false positives but may increase reject rates
+  similarity_threshold: 0.4
+
+# ########################################################################################
+# ##################################Role Model Configuration##############################
+# ########################################################################################
+
+prompt: |
+  You are Computer, a helpful assistant.
+  [Core Traits]
+  Be brief, precise, and helpful in responses.
+  [Interaction Guide]
+  Never give long, rambling answers.
+
+# Default system‑prompt template file
+prompt_template: agent-base-prompt.txt
+
+# End‑of‑conversation prompt
+end_prompt:
+  enable: true  # Whether to enable an ending phrase
+  # Ending phrase
+  prompt: |
+    Please conclude this conversation in a future style with “Time flies by so quickly,” using expressive, nostalgic words!
+
+# Module selected for specific processing
+selected_module:
+  # Voice Activity Detection (VAD) module; default uses SileroVAD
+  VAD: SileroVAD
+  # Automatic Speech Recognition (ASR) module; default uses FunASR local model
+  ASR: FunASR
+  # LLM module selection follows the type defined in the configuration; default is ChatGLMLLM
+  LLM: LMStudioLLM
+  # Visual‑language large model
+  #VLLM: 
+  # TTS module selection follows the type defined in the configuration; default is EdgeTTS
+  TTS: EdgeTTS
+  # Memory module; disabled by default; if you need ultra‑long memory, use mem0ai; if you prioritize privacy, use mem_local_short
+  Memory: nomem
+  # Intent detection module; when enabled it can play music, adjust volume, or recognize exit commands.
+  # If you do not want intent detection, set it to: nointent
+  # Intent detection can use intent_llm. Advantages: general‑purpose; Disadvantages: adds a serial pre‑intent step, increasing latency; can control volume, IoT, etc.
+  # Intent detection can also use function_call. Advantages: on‑demand tool calls, faster; theoretical ability to control all IoT commands, but requires the selected LLM to support function_call.
+  # By default the free ChatGLMLLM already supports function_call; for higher stability you may switch to DoubaoLLM with model_name: doubao-1-5-pro-32k-250115
+  Intent: function_call
+
+Intent:
+  # Do not use intent detection
+  nointent:
+    # No additional type needed
+    type: nointent
+  intent_llm:
+    # No additional type needed
+    type: intent_llm
+    # Use an independent reasoning model for intent detection
+    # If left empty, the system will fall back to the model defined in selected_module.LLM for intent reasoning
+    # If you want a dedicated LLM for intent detection, specify it here, e.g., ChatGLMLLM
+    llm: LMStudioLLM
+    # Plugins/functions to load; the system already loads “handle_exit_intent(Exit detection)”, “play_music(Music playback)”
+    # Below are examples of loading weather, role‑change, and news plugins
+    functions:
+      - get_weather
+      - get_news_from_newsnow
+      - play_music
+  function_call:
+    # No additional type needed
+    type: function_call
+    # Plugins/functions to load; the system already loads “handle_exit_intent(Exit detection)”, “play_music(Music playback)”
+    # Below are examples of loading weather, role‑change, and news plugins
+    functions:
+      - change_role
+      - get_weather
+      # - search_from_ragflow
+      # - get_news_from_chinanews
+      - get_news_from_newsnow
+      - play_music
+      # - hass_get_state
+      # - hass_set_state
+      # - hass_play_music
+      # Note: If you use hass_play_music, you should NOT also enable play_music; keep only one.
+
+Memory:
+  nomem:
+    # Disable memory functionality
+    type: nomem
+
+ASR:
+  FunASR:
+    type: fun_local
+    model_dir: models/SenseVoiceSmall
+    output_dir: tmp/
+  FunASRServer:
+    # Deploy FunASR as a separate service and use its API
+    # 1️⃣ mkdir -p ./funasr-runtime-resources/models
+    # 2️⃣ sudo docker run -p 10096:10095 -it --privileged=true -v $PWD/funasr-runtime-resources/models:/workspace/models registry.cn-hangzhou.aliyuncs.com/funasr_repo/funasr:funasr-runtime-sdk-online-cpu-0.1.12
+    # After entering the container, run the next command inside it:
+    # cd FunASR/runtime
+    # Then run:
+    # nohup bash run_server_2pass.sh --download-model-dir /workspace/models --vad-dir damo/speech_fsmn_vad_zh-cn-16k-common-onnx --model-dir iic/SenseVoiceSmall-onnx  --online-model-dir damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online-onnx  --punc-dir damo/punc_ct-transformer_zh-cn-common-vad_realtime-vocab272727-onnx --lm-dir damo/speech_ngram_lm_zh-cn-ai-wesp-fst --itn-dir thuduj12/fst_itn_zh --hotword /workspace/models/hotwords.txt > log.txt 2>&1 &
+    # After this, you can attach to the container and run: tail -f log.txt
+    # The above uses CPU inference; if you have a GPU, see the detailed guide at: https://github.com/modelscope/FunASR/blob/main/runtime/docs/SDK_advanced_guide_online_zh.md
+    type: fun_server
+    host: 127.0.0.1
+    port: 10096
+    is_ssl: true
+    api_key: none
+    output_dir: tmp/
+
+# Voice Activity Detection (VAD) – Silero VAD configuration
+VAD:
+  SileroVAD:
+    type: silero
+    threshold: 0.5
+    threshold_low: 0.3
+    model_dir: models/snakers4_silero-vad
+    min_silence_duration_ms: 200  # Increase if you have long pauses between speech
+
+# Large Language Model (LLM) configuration
+LLM:
+  LMStudioLLM:
+    # Define LLM API type (LM Studio)
+    type: openai
+    model_name: nvidia-nemotron-3-nano-30b-a3b   # Model name; must be downloaded via the community first
+    url: http://andreaskgb1.local:1234/api/v1    # LM Studio service address
+    api_key: lm-studio                           # Fixed API key for LM Studio
+  
+# Visual‑Language Large Model (VLLM) configuration
+#VLLM:  
+
+# Text‑to‑Speech (TTS) configurations
+TTS:
+  # Currently supported types: edge, doubao; you can add your own adapters
+  EdgeTTS:
+    # Define TTS API type
+    type: edge
+    voice: zh-CN-XiaoxiaoNeural
+    output_dir: tmp/
+  CustomTTS:  #### AK TODO !!!!!!!!!!!!
+    # Custom TTS interface; request parameters can be customized to integrate various TTS engines
+    # Example: local deployment of KokoroTTS
+    # CPU only: docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    # GPU only: docker run --gpus all -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-gpu:latest
+    # The interface must accept POST and return an audio file
+    type: custom
+    method: POST
+    url: "http://127.0.0.1:8880/v1/audio/speech"
+    params: # Custom request parameters
+      input: "{prompt_text}"
+      response_format: "mp3"
+      download_format: "mp3"
+      voice: "zf_xiaoxiao"
+      lang_code: "z"
+      return_download_link: true
+      speed: 1
+      stream: false
+    headers: # Custom request headers
+      # Authorization: Bearer xxxx
+    format: mp3 # Audio format returned by the interface
+    output_dir: tmp/
+
+# #AK ***************************** 
+# #AK *** added Jetson Settings *** 
+# #AK ***************************** 
+
+# Performance settings optimized for Jetson Orin NX 16GB
+performance:
+  # Optimize for ARM64 architecture and 16GB memory
+  max_concurrent_requests: 12
+  request_timeout: 30
+  memory_limit_mb: 8192
+  
+# Logging configuration for containerized deployment
+logging:
+  level: INFO
+  file_rotation: true
+  max_size: "50MB"
+  backup_count: 3
+
+# Network configuration for local network access
+network:
+  # Allow connections from other systems in local network
+  cors_origins: ["*"]
+  max_connection_pool: 100
