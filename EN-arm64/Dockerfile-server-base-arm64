@@ -1,0 +1,46 @@
+# Dockerfile-server-base-arm64
+# Docker image optimized for en_US, ARM64, including system dependencies and Python packages.
+# NOTE: This base image includes CUDA 12.8 (cu128) and GPU-enabled ONNX Runtime for Jetson/ARM64.
+# GPU acceleration is intended for this image; installation of onnxruntime-gpu and related packages
+# is controlled via main/xiaozhi-server/requirements-j.txt (they may be commented/uncommented there).
+# If a CPU-only deployment is desired, consider switching this base image to a non-CUDA variant.
+FROM dustynv/onnxruntime:1.22-r36.4.0-cu128-24.04
+
+# Install system dependencies with ARM64 optimizations
+# for en use:   sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+# for zh use:   sed -i '/zh_CN.UTF-8/s/^# //g' /etc/locale.gen && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libopus0 ffmpeg locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Original uses Chinese mirrors, skip this for us
+# RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+#    pip config set global.trusted-host mirrors.aliyun.com && \
+RUN pip config set global.timeout 120 && \
+    pip config set install.retries 5
+
+# Set environment variables to ensure correct character encoding - use en_US instead of zh_CN
+# ENV LANG=zh_CN.UTF-8 \
+#     LC_ALL=zh_CN.UTF-8 \
+#     LANGUAGE=zh_CN:zh \
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    PYTHONIOENCODING=utf-8 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /opt/xiaozhi-esp32-server
+
+# Copy requirements.txt version for Jetson
+COPY main/xiaozhi-server/requirements-j.txt .
+
+# Install Python dependencies with ARM64-specific optimizations
+RUN pip config set global.index-url https://pypi.jetson-ai-lab.io/jp6/cu128
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install other dependencies, excluding PyTorch versions from requirements.txt
+RUN pip config set global.index-url https://pypi.jetson-ai-lab.io/jp6/cu126
+RUN pip install --no-cache-dir -r requirements-j.txt --default-timeout=120 --retries 5

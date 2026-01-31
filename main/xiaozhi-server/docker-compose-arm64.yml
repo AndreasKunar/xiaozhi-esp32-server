@@ -1,0 +1,24 @@
+# Docker Server Installation
+
+version: '3'
+services:
+  xiaozhi-esp32-server:
+    image: xiaozhi-esp32-server:server-arm64
+    container_name: xiaozhi-esp32-server
+    restart: always
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - TZ=Europe/Vienna
+    ports:
+      # WebSocket service port
+      - "8000:8000"
+      # HTTP service port for simple OTA interface (single service deployment) and vision analysis interface
+      - "8003:8003"
+    volumes:
+      # Configuration file directory
+      - ./data:/opt/xiaozhi-esp32-server/data
+      # Model file mount, very important.
+      # Prerequisite: ensure ./models/SenseVoiceSmall/model.pt exists (relative to this docker-compose file)
+      # before running `docker-compose up`, otherwise the container may fail to load the model.
+      - ./models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt

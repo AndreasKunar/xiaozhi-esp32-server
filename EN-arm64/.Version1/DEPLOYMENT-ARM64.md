@@ -9,6 +9,7 @@ This guide will help you deploy the xiaozhi-esp32-server project on your Jetson 
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
+# add user to docker group to avoid using sudo
 sudo usermod -aG docker $USER
 # Log out and back in for group changes to take effect
 ```

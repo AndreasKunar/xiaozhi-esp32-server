@@ -1,0 +1,8 @@
+# Dockerfile-server-arm64 - image for ARM64, containing only application code
+FROM xiaozhi-esp32-server:server-base-arm64
+
+# Copy application code
+COPY main/xiaozhi-server .
+
+# Start the application with proper signal handling
+CMD ["python", "app.py"]
