@@ -1,202 +1,161 @@
-# IndexStreamTTS Usage Guide
+# MCP Endpoint Deployment & Configuration Guide  
 
-## Environment Setup
-### 1. Clone the Repository  
-```bash
-git clone https://github.com/Ksuriuri/index-tts-vllm.git
-```
-Enter the cloned directory  
-```bash
-cd index-tts-vllm
-```
-Switch to the specified version (use the historical version of VLLM‑0.10.2)  
-```bash
-git checkout 224e8d5e5c8f66801845c66b30fa765328fd0be3
-```
+This tutorial contains three parts:  
+1️. How to deploy the MCP endpoint service  
+2️. How to configure the MCP endpoint when deploying all modules  
+3. How to configure the MCP endpoint when deploying a single module  
 
-### 2. Create and Activate a Conda Environment  
-```bash
-conda create -n index-tts-vllm python=3.12
-conda activate index-tts-vllm
-```
+---  
 
-### 3. Install PyTorch (Version must be 2.8.0)  
-#### Check the highest CUDA version supported by your GPU and the actual version installed  
-```bash
-nvidia-smi
-nvcc --version
-``` 
-#### The highest CUDA version supported by the driver  
-```
-CUDA Version: 12.8
-```
-#### The actual CUDA compiler version installed  
-```
-Cuda compilation tools, release 12.8, V12.8.89
-```
-#### Therefore, the corresponding installation command (PyTorch defaults to the 12.8 driver version)  
-```bash
-pip install torch torchvision
-```
-You need PyTorch version **2.8.0** (which matches VLLM 0.10.2). See the [official PyTorch site](https://pytorch.org/get-started/locally/) for the exact installation command.
+## 1️. How to Deploy the MCP Endpoint Service  
 
-### 4. Install Dependencies  
-```bash
-pip install -r requirements.txt
-```
+### Step 1: Download the MCP Endpoint Project Source Code  
 
-### 5. Download Model Weights  
-#### Option 1: Download the official weight files and convert them  
-These are the official weights; you can place them anywhere locally. They support **IndexTTS-1.5** weights.  
+Open the project URL in your browser: **[MCP Endpoint Project](https://github.com/xinnan-tech/mcp-endpoint-server)**  
 
-| HuggingFace                                 | ModelScope                                 |
-|---------------------------------------------|-------------------------------------------|
-| [IndexTTS](https://huggingface.co/IndexTeam/Index-TTS) | [IndexTTS](https://modelscope.cn/models/IndexTeam/Index-TTS) |
-| [IndexTTS-1.5](https://huggingface.co/IndexTeam/IndexTTS-1.5) | [IndexTTS-1.5](https://modelscope.cn/models/IndexTeam/IndexTTS-1.5) |
+On the page you will see a green button labeled **`Code`**. Click it and you will see a **`Download ZIP`** button.  
 
-Below is an example using the ModelScope installation method.  
-**Note:** If you have already installed `git` you can skip the `git-lfs` installation step.  
+Click **`Download ZIP`** to download the source‑code archive. After downloading, unzip it on your computer. The folder may be named something like `mcp-endpoint-server-main`. Rename it to **`mcp-endpoint-server`**.  
+
+### Step 2: Start the Service  
+
+The project is simple and can be run with Docker. If you prefer not to use Docker, see the README for alternative instructions:  
+[Run from source](https://github.com/xinnan-tech/mcp-endpoint-server/blob/main/README_dev.md)  
+
+**Docker deployment steps:**  
 
 ```bash
-# Install Git LFS (skip if already installed)
-sudo apt-get install git-lfs
-git lfs install
+# 1. Enter the project root directory
+cd mcp-endpoint-server
+
+# 2. Clean up previous containers/images
+docker compose -f docker-compose.yml down
+docker stop mcp-endpoint-server
+docker rm mcp-endpoint-server
+docker rmi ghcr.nju.edu.cn/xinnan-tech/mcp-endpoint-server:latest
+
+# 3. Start the Docker container
+docker compose -f docker-compose.yml up -d
+
+# 4. View the logs
+docker logs -f mcp-endpoint-server
 ```
 
-Create a directory for the models and pull the repository:  
-```bash
-mkdir model_dir
-cd model_dir
-git clone https://www.modelscope.cn/IndexTeam/IndexTTS-1.5.git
+When the container starts, the logs will contain something similar to:  
+
+```
+250705 INFO-=====The following addresses are the MCP endpoint addresses for the control panel / single‑module MCP=====
+250705 INFO- Control panel MCP configuration: http://172.22.0.2:8004/mcp_endpoint/health?key=abc
+250705 INFO- Single‑module MCP endpoint: ws://172.22.0.2:8004/mcp_endpoint/mcp/?token=def
+250705 INFO-=====Please choose the appropriate one based on your deployment, and do NOT share these URLs with anyone======
 ```
 
-#### Convert the Model Weights  
-```bash
-bash convert_hf_format.sh /path/to/your/model_dir
+⚠️ **Important:** Because you are using Docker, **do not** use the addresses shown above directly. Replace `172.22.0.2` with the IP address of your own machine on the local network (e.g., `192.168.1.25`).  
+
+So the example addresses:  
+
 ```
-For example, if the downloaded IndexTTS-1.5 model is located in `model_dir/IndexTTS-1.5`, run:  
-```bash
-bash convert_hf_format.sh model_dir/IndexTTS-1.5
-```
-This command converts the official weights into a format compatible with the `transformers` library and places them in a `vllm` folder under the model directory for easy loading by the VLLM library later.
-
-### 6. Adjust the API Interface to Fit the Project  
-The response format of the API does not match the project requirements; it needs to be modified to return raw audio data directly.  
-
-```bash
-vi api_server.py
-```
-```python
-@app.post("/tts", responses={
-    200: {"content": {"application/octet-stream": {}}},
-    500: {"content": {"application/json": {}}}
-})
-async def tts_api(request: Request):
-    try:
-        data = await request.json()
-        text = data["text"]
-        character = data["character"]
-
-        global tts
-        sr, wav = await tts.infer_with_ref_audio_embed(character, text)
-
-        return Response(content=wav.tobytes(), media_type="application/octet-stream")
-        
-    except Exception as ex:
-        tb_str = ''.join(traceback.format_exception(type(ex), ex, ex.__traceback__))
-        print(tb_str)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "error": str(tb_str)
-            }
-        )
+Control panel MCP configuration: http://172.22.0.2:8004/mcp_endpoint/health?key=abc
+Single‑module MCP endpoint: ws://172.22.0.2:8004/mcp_endpoint/mcp/?token=def
 ```
 
-### 7. Write a Shell Script to Start the Service (Make sure you run it inside the appropriate conda environment)  
-```bash
-vi start_api.sh
+Should become:  
+
 ```
-Paste the following content, then press `:wq` to save and exit.  
-**Please replace `/home/system/index-tts-vllm/model_dir/IndexTTS-1.5` with the actual path to your model directory.**
-
-```bash
-# Activate the conda environment
-conda activate index-tts-vllm
-echo "Activated conda environment"
-sleep 2
-
-# Find the process using port 11996
-PID_VLLM=$(sudo netstat -tulnp | grep 11996 | awk '{print $7}' | cut -d'/' -f1)
-
-# Check if a process was found
-if [ -z "$PID_VLLM" ]; then
-  echo "No process found using port 11996"
-else
-  echo "Found a process using port 11996, PID: $PID_VLLM"
-  # Try a normal kill, wait 2 seconds
-  kill $PID_VLLM
-  sleep 2
-  # Check if the process is still running
-  if ps -p $PID_VLLM > /dev/null; then
-    echo "Process is still running, force killing..."
-    kill -9 $PID_VLLM
-  fi
-  echo "Process $PID_VLLM terminated"
-fi
-
-# Find VLLM-related processes (EngineCore)
-GPU_PIDS=$(ps aux | grep -E "VLLM|EngineCore" | grep -v grep | awk '{print $2}')
-
-# Check if any such processes exist
-if [ -z "$GPU_PIDS" ]; then
-  echo "No VLLM-related processes found"
-else
-  echo "Found VLLM-related processes, PIDs: $GPU_PIDS"
-  # Try a normal kill, wait 2 seconds
-  kill $GPU_PIDS
-  sleep 2
-  # Check if they are still running
-  if ps -p $GPU_PIDS > /dev/null; then
-    echo "Processes are still running, force killing..."
-    kill -9 $GPU_PIDS
-  fi
-  echo "Processes $GPU_PIDS terminated"
-fi
-
-# Create a tmp directory if it doesn't exist
-mkdir -p tmp
-
-# Run api_server.py in the background, redirecting logs to tmp/server.log
-nohup python api_server.py --model_dir /home/system/index-tts-vllm/model_dir/IndexTTS-1.5 --port 11996 > tmp/server.log 2>&1 &
-echo "api_server.py has been started in the background, logs are in tmp/server.log"
+Control panel MCP configuration: http://192.168.1.25:8004/mcp_endpoint/health?key=abc
+Single‑module MCP endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=def
 ```
-Make the script executable and run it:  
-```bash
-chmod +x start_api.sh
-./start_api.sh
-```
-You can view the log with:  
-```bash
-tail -f tmp/server.log
-```
-If you have enough GPU memory, you can add the parameter `--gpu_memory_utilization` (default is 0.25) to adjust the GPU memory usage ratio.
 
-## Voice Configuration
-**IndexStreamTTS** supports registering custom voices through a configuration file, allowing both single‑voice and multi‑voice configurations.  
-Edit the `assets/speaker.json` file in the project root to define your custom voices.
+Copy these two endpoint URLs and keep them in a draft for later use.  
 
-### Configuration Format  
+### Verify the URLs  
+
+Open a browser and navigate to the **Control panel MCP configuration** address you just customized. If you see output similar to the following, the endpoint is working:  
+
 ```json
 {
-    "VoiceName1": [
-        "Path/To/Audio1.wav",
-        "Path/To/Audio2.wav"
-    ],
-    "VoiceName2": [
-        "Path/To/Audio3.wav"
-    ]
+  "result": {
+    "status": "success",
+    "connections": {
+      "tool_connections": 0,
+      "robot_connections": 0,
+      "total_connections": 0
+    }
+  },
+  "error": null,
+  "id": null,
+  "jsonrpc": "2.0"
 }
 ```
-**Note:** After adding new voices, you must restart the service for the new voices to be registered. In the smart‑control panel, you also need to add the corresponding voice (replace the voice module accordingly).
+
+Keep the two endpoint URLs handy; you’ll need them for the next steps.  
+
+---  
+
+## 2️. Configuring the MCP Endpoint for Full‑Module Deployments  
+
+1. **Enable the MCP Endpoint feature**  
+   - In the control panel, click **`Parameter Dictionary`** → select **`System Feature Configuration`** from the dropdown.  
+   - Check the **`MCP Endpoint`** option and click **`Save Configuration`**.  
+   - On the **`Role Configuration`** page, click **`Edit Function`** to see the **`mcp endpoint`** feature listed.  
+
+2. **Set the parameter value**  
+   - Log in to the control panel with an admin account.  
+   - Navigate to **`Parameter Dictionary`** → **`Parameter Management`**.  
+   - Search for the parameter **`server.mcp_endpoint`**. Its current value should be `null`.  
+   - Click **`Edit`**, paste the **Control panel MCP configuration** URL you obtained earlier into the **`Parameter Value`** field, and **Save**.  
+
+If the save succeeds, the configuration is complete and you can test it via the agent view. If it fails, the control panel likely cannot reach the MCP endpoint—common causes are a firewall or an incorrect local IP address.  
+
+---  
+
+## 3️. Configuring the MCP Endpoint for Single‑Module Deployments  
+
+1. **Locate the configuration file**  
+   - Find your configuration file at `data/.config.yaml`.  
+   - Search for `mcp_endpoint`. If it does not exist, add it.  
+
+2. **Add / modify the `mcp_endpoint` entry**  
+
+   Example (replace placeholders with your actual values):  
+
+   ```yaml
+   server:
+     websocket: ws://your-ip-or-domain:port/xiaozhi/v1/
+     http_port: 8002
+     log:
+       log_level: INFO
+
+   # ... other configurations ...
+
+   mcp_endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=def   # <-- paste the single‑module endpoint URL here
+   ```
+
+3. **Start the single‑module service**  
+
+   After editing, when you start the service you should see logs similar to:  
+
+   ```
+   250705[__main__]-INFO-Initializing component: vad successfully (SileroVAD)
+   250705[__main__]-INFO-Initializing component: asr successfully (FunASRServer)
+   250705[__main__]-INFO-OTA interface: http://192.168.1.25:8002/xiaozhi/ota/
+   250705[__main__]-INFO-Visual analysis interface: http://192.168.1.25:8002/mcp/vision/explain
+   250705[__main__]-INFO-MCP endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
+   250705[__main__]-INFO-Websocket address: ws://192.168.1.25:8000/xiaozhi/v1/
+   250705[__main__]-INFO-=======The above address is a WebSocket URL; do NOT open it in a browser=======
+   250705[__main__]-INFO-If you want to test the WebSocket, open test_page.html in the test directory with Google Chrome
+   250705[__main__]-INFO-=============================================================
+   ```
+
+   The line `mcp_endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc` confirms that the endpoint has been correctly configured.  
+
+---  
+
+### Quick Recap  
+
+| Deployment Type | Where to Configure | URL to Use |
+|-----------------|-------------------|------------|
+| **Full‑module** | Control panel → Parameter Management → `server.mcp_endpoint` | `http://<your‑LAN‑IP>:8004/mcp_endpoint/health?key=abc` |
+| **Single‑module** | `data/.config.yaml` → `mcp_endpoint` field | `ws://<your‑LAN‑IP>:8004/mcp_endpoint/mcp/?token=def` |
+
+After completing the appropriate steps, your MCP endpoint will be ready for use.  

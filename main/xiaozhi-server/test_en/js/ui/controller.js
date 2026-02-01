@@ -224,14 +224,14 @@ class UIController {
         if (dialBtn) {
             if (isConnected) {
                 dialBtn.classList.add('dial-active');
-                dialBtn.querySelector('.btn-text').textContent = 'Hang Up';
-                // Update dial button icon to hang up icon
+                dialBtn.querySelector('.btn-text').textContent = 'Disconnect';
+                // Update dial button icon to Disconnect icon
                 dialBtn.querySelector('svg').innerHTML = `
                     <path d="M12,9C10.4,9 9,10.4 9,12C9,13.6 10.4,15 12,15C13.6,15 15,13.6 15,12C15,10.4 13.6,9 12,9M12,17C9.2,17 7,14.8 7,12C7,9.2 9.2,7 12,7C14.8,7 17,9.2 17,12C17,14.8 14.8,17 12,17M12,4.5C7,4.5 2.7,7.6 1,12C2.7,16.4 7,19.5 12,19.5C17,19.5 21.3,16.4 23,12C21.3,7.6 17,4.5 12,4.5Z"/>
                 `;
             } else {
                 dialBtn.classList.remove('dial-active');
-                dialBtn.querySelector('.btn-text').textContent = 'Dial';
+                dialBtn.querySelector('.btn-text').textContent = 'Connect';
                 // Restore dial button icon
                 dialBtn.querySelector('svg').innerHTML = `
                     <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/>
@@ -496,7 +496,7 @@ class UIController {
             const dialBtn = document.getElementById('dialBtn');
             if (dialBtn) {
                 dialBtn.disabled = false;
-                dialBtn.querySelector('.btn-text').textContent = 'Dial';
+                dialBtn.querySelector('.btn-text').textContent = 'Connect';
                 dialBtn.classList.remove('dial-active');
                 console.log('Dial button state restored successfully');
             }

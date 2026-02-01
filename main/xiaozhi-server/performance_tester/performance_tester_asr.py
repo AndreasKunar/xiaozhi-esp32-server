@@ -94,7 +94,7 @@ class ASRPerformanceTester:
             token_fields = ["access_token", "api_key", "token"]
             if any(
                 field in config
-                and str(config[field]).lower() in ["你的", "placeholder", "none", "null", ""]
+                and str(config[field]).lower() in ["your", "你的", "placeholder", "none", "null", ""]
                 for field in token_fields
             ):
                 print(f"  STT {stt_name} 未配置有效access_token/api_key，已跳过")

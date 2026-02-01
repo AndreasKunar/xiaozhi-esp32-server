@@ -13,7 +13,7 @@ from core.providers.asr.dto.dto import InterfaceType
 TAG = __name__
 
 class ListenTextMessageHandler(TextMessageHandler):
-    """Listen消息处理器"""
+    """Listen message handler"""
 
     @property
     def message_type(self) -> TextMessageType:
@@ -23,7 +23,7 @@ class ListenTextMessageHandler(TextMessageHandler):
         if "mode" in msg_json:
             conn.client_listen_mode = msg_json["mode"]
             conn.logger.bind(tag=TAG).debug(
-                f"客户端拾音模式：{conn.client_listen_mode}"
+                f"Client listen mode: {conn.client_listen_mode}"
             )
         if msg_json["state"] == "start":
             conn.client_have_voice = True
@@ -32,10 +32,10 @@ class ListenTextMessageHandler(TextMessageHandler):
             conn.client_have_voice = True
             conn.client_voice_stop = True
             if conn.asr.interface_type == InterfaceType.STREAM:
-                # 流式模式下，发送结束请求
+                # In streaming mode, send stop request
                 asyncio.create_task(conn.asr._send_stop_request())
             else:
-                # 非流式模式：直接触发ASR识别
+                # In non-streaming mode, directly trigger ASR recognition
                 if len(conn.asr_audio) > 0:
                     asr_audio_task = conn.asr_audio.copy()
                     conn.asr_audio.clear()
@@ -48,29 +48,29 @@ class ListenTextMessageHandler(TextMessageHandler):
             conn.asr_audio.clear()
             if "text" in msg_json:
                 conn.last_activity_time = time.time() * 1000
-                original_text = msg_json["text"]  # 保留原始文本
+                original_text = msg_json["text"]  # Preserve the original text
                 filtered_len, filtered_text = remove_punctuation_and_length(
                     original_text
                 )
 
-                # 识别是否是唤醒词
+                # Recognize if it is a wake word
                 is_wakeup_words = filtered_text in conn.config.get("wakeup_words")
-                # 是否开启唤醒词回复
+                # Whether to enable wake word response
                 enable_greeting = conn.config.get("enable_greeting", True)
 
                 if is_wakeup_words and not enable_greeting:
-                    # 如果是唤醒词，且关闭了唤醒词回复，就不用回答
+                    # If it is a wake word and wake word response is disabled, do not respond
                     await send_stt_message(conn, original_text)
                     await send_tts_message(conn, "stop", None)
                     conn.client_is_speaking = False
                 elif is_wakeup_words:
                     conn.just_woken_up = True
-                    # 上报纯文字数据（复用ASR上报功能，但不提供音频数据）
+                    # Report pure text data (reuse ASR reporting functionality, but do not provide audio data)
                     enqueue_asr_report(conn, "嘿，你好呀", [])
                     await startToChat(conn, "嘿，你好呀")
                 else:
                     conn.just_woken_up = True
-                    # 上报纯文字数据（复用ASR上报功能，但不提供音频数据）
+                    # Report pure text data (reuse ASR reporting functionality, but do not provide audio data)
                     enqueue_asr_report(conn, original_text, [])
-                    # 否则需要LLM对文字内容进行答复
+                    # Otherwise, LLM needs to respond to the text content
                     await startToChat(conn, original_text)

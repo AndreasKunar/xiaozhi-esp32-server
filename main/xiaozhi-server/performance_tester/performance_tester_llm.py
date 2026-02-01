@@ -251,7 +251,7 @@ class LLMPerformanceTester:
                     }
             else:
                 if "api_key" in config and any(
-                    x in config["api_key"] for x in ["你的", "placeholder", "sk-xxx"]
+                    x in config["api_key"] for x in ["你的", "your","placeholder", "sk-xxx"]
                 ):
                     print(f"跳过未配置的 LLM: {llm_name}")
                     return {

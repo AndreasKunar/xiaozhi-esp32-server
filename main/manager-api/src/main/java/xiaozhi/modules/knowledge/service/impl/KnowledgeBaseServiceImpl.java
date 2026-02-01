@@ -426,7 +426,7 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
         }
 
         // 检查api_key是否包含占位符
-        if (apiKey.contains("你")) {
+        if (apiKey.contains("你") || apiKey.contains("you")) { // is thee default placeholder
             throw new RenException(ErrorCode.RAG_API_ERROR_API_KEY_INVALID);
         }
 

@@ -13,7 +13,7 @@ logger = setup_logging()
 
 async def connect_mcp_endpoint(mcp_endpoint_url: str, conn=None) -> MCPEndpointClient:
     """连接到MCP接入点"""
-    if not mcp_endpoint_url or "你的" in mcp_endpoint_url or mcp_endpoint_url == "null":
+    if not mcp_endpoint_url or ("your" in mcp_endpoint_url or "你的" in mcp_endpoint_url) or mcp_endpoint_url == "null":
         return None
 
     try:

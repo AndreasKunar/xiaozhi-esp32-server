@@ -1,161 +1,131 @@
-# MCP Endpoint Deployment & Configuration Guide  
+# MCP Endpoint Usage Guide
 
-This tutorial contains three parts:  
-- 1️⃣ How to deploy the MCP endpoint service  
-- 2️⃣ How to configure the MCP endpoint when deploying all modules  
-- 3️⃣ How to configure the MCP endpoint when deploying a single module  
+This tutorial uses the MCP calculator feature from Xiaozhi's open-source project as an example, explaining how to integrate your own MCP service into your own endpoint.
 
----  
+**Prerequisite:** Your `xiaozhi-server` must have MCP endpoint functionality enabled. If not, enable it first by following [this tutorial](./mcp-endpoint-enable.md).
 
-## 1️⃣ How to Deploy the MCP Endpoint Service  
+# How to Attach an Agent to a Simple MCP Feature (e.g., Calculator)
 
-### Step 1: Download the MCP Endpoint Project Source Code  
+### If You’re Using Full-Module Deployment
 
-Open the project URL in your browser: **[MCP Endpoint Project](https://github.com/xinnan-tech/mcp-endpoint-server)**  
+If you are using full-module deployment, go to the **Intelligent Agent Management** section in the smart control panel, click **Configure Role**, and then click the **Edit Function** button next to **Intent Recognition**.
 
-On the page you will see a green button labeled **`Code`**. Click it and you will see a **`Download ZIP`** button.  
+Click this button. At the bottom of the opened page, you’ll see an **MCP Endpoint**. Normally, it will display the **MCP Endpoint Address** for this agent. Next, we’ll extend this agent with a calculator function based on MCP technology.
 
-Click **`Download ZIP`** to download the source‑code archive. After downloading, unzip it on your computer. The folder may be named something like `mcp-endpoint-server-main`. Rename it to **`mcp-endpoint-server`**.  
+The **MCP Endpoint Address** is important; you’ll use it shortly.
 
-### Step 2: Start the Service  
+### If You’re Using Single-Module Deployment
 
-The project is simple and can be run with Docker. If you prefer not to use Docker, see the README for alternative instructions:  
-[Run from source](https://github.com/xinnan-tech/mcp-endpoint-server/blob/main/README_dev.md)  
+If you are using single-module deployment and have already configured the MCP Endpoint Address in your configuration file, then when the module starts, you should see logs similar to the following:
 
-**Docker deployment steps:**  
+```text
+250705[__main__]-INFO-初始化组件: vad成功 SileroVAD
+250705[__main__]-INFO-初始化组件: asr成功 FunASRServer
+250705[__main__]-INFO-OTA接口是          http://192.168.1.25:8002/xiaozhi/ota/
+250705[__main__]-INFO-视觉分析接口是     http://192.168.1.25:8002/mcp/vision/explain
+250705[__main__]-INFO-mcp接入点是        ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
+250705[__main__]-INFO-Websocket地址是    ws://192.168.1.25:8000/xiaozhi/v1/
+250705[__main__]-INFO-=======上面的地址是websocket协议地址，请勿用浏览器访问=======
+250705[__main__]-INFO-如想测试websocket请用谷歌浏览器打开test目录下的test_page.html
+250705[__main__]-INFO-=============================================================
+```
+In the above logs, the line:
+
+```text
+250705[__main__]-INFO-mcp接入点是        ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
+```
+
+represents your **MCP Endpoint Address**. 
+
+or
+
+```text
+250705[__main__]-INFO-Initialize component: VAD successful SileroVAD
+250705[__main__]-INFO-Initialize component: ASR successful FunASRServer
+250705[__main__]-INFO-OTA interface is          http://192.168.1.25:8002/xiaozhi/ota/
+250705[__main__]-INFO-Vision analysis interface is     http://192.168.1.25:8002/mcp/vision/explain
+250705[__main__]-INFO-MCP endpoint is        ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
+250705[__main__]-INFO-WebSocket address is    ws://192.168.1.25:8000/xiaozhi/v1/
+250705[__main__]-INFO-==========The above address is a WebSocket protocol address; do not access it via a browser==========
+250705[__main__]-INFO-If you want to test the WebSocket, open test_page.html in the test directory using Google Chrome
+250705[__main__]-INFO-=============================================================
+```
+
+The MCP Endpoint Address address is crucial for the next steps.
+
+## Step 1: Download the Calculator Project from Xiaozhi
+
+Open the calculator project written by Xiaozhi at https://github.com/78/mcp-calculator.
+
+On the project page, click the green **Code** button, then select **Download ZIP**.
+
+Download the source code archive to your computer and extract it. The extracted folder may be named something like `mcp-calculatorr-main`. Rename it to `mcp-calculator`. Then navigate into the project directory to install dependencies:
 
 ```bash
-# 1. Enter the project root directory
-cd mcp-endpoint-server
+# Enter the project directory
+cd mcp-calculator
 
-# 2. Clean up previous containers/images
-docker compose -f docker-compose.yml down
-docker stop mcp-endpoint-server
-docker rm mcp-endpoint-server
-docker rmi ghcr.nju.edu.cn/xinnan-tech/mcp-endpoint-server:latest
+conda remove -n mcp-calculator --all -y
+conda create -n mcp-calculator python=3.10 -y
+conda activate mcp-calculator
 
-# 3. Start the Docker container
-docker compose -f docker-compose.yml up -d
-
-# 4. View the logs
-docker logs -f mcp-endpoint-server
+pip install -r requirements.txt
 ```
 
-When the container starts, the logs will contain something similar to:  
+## Step 2: Start the Service
 
-```
-250705 INFO-=====The following addresses are the MCP endpoint addresses for the control panel / single‑module MCP=====
-250705 INFO- Control panel MCP configuration: http://172.22.0.2:8004/mcp_endpoint/health?key=abc
-250705 INFO- Single‑module MCP endpoint: ws://172.22.0.2:8004/mcp_endpoint/mcp/?token=def
-250705 INFO-=====Please choose the appropriate one based on your deployment, and do NOT share these URLs with anyone======
-```
+Before starting, copy the MCP Endpoint address from your agent in the smart control panel. For example, if your agent’s MCP address is:
 
-⚠️ **Important:** Because you are using Docker, **do not** use the addresses shown above directly. Replace `172.22.0.2` with the IP address of your own machine on the local network (e.g., `192.168.1.25`).  
-
-So the example addresses:  
-
-```
-Control panel MCP configuration: http://172.22.0.2:8004/mcp_endpoint/health?key=abc
-Single‑module MCP endpoint: ws://172.22.0.2:8004/mcp_endpoint/mcp/?token=def
+```text
+ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
 ```
 
-Should become:  
+Set the environment variable:
 
-```
-Control panel MCP configuration: http://192.168.1.25:8004/mcp_endpoint/health?key=abc
-Single‑module MCP endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=def
-```
-
-Copy these two endpoint URLs and keep them in a draft for later use.  
-
-### Verify the URLs  
-
-Open a browser and navigate to the **Control panel MCP configuration** address you just customized. If you see output similar to the following, the endpoint is working:  
-
-```json
-{
-  "result": {
-    "status": "success",
-    "connections": {
-      "tool_connections": 0,
-      "robot_connections": 0,
-      "total_connections": 0
-    }
-  },
-  "error": null,
-  "id": null,
-  "jsonrpc": "2.0"
-}
+```bash
+export MCP_ENDPOINT=ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
 ```
 
-Keep the two endpoint URLs handy; you’ll need them for the next steps.  
+Then start the service:
 
----  
+```bash
+python mcp_pipe.py calculator.py
+```
 
-## 2️⃣ Configuring the MCP Endpoint for Full‑Module Deployments  
+### If You Are Using Full-Module Deployment
 
-1. **Enable the MCP Endpoint feature**  
-   - In the control panel, click **`Parameter Dictionary`** → select **`System Feature Configuration`** from the dropdown.  
-   - Check the **`MCP Endpoint`** option and click **`Save Configuration`**.  
-   - On the **`Role Configuration`** page, click **`Edit Function`** to see the **`mcp endpoint`** feature listed.  
+After starting, return to the smart control panel, refresh the MCP connection status, and you should see the newly added functionality listed.
 
-2. **Set the parameter value**  
-   - Log in to the control panel with an admin account.  
-   - Navigate to **`Parameter Dictionary`** → **`Parameter Management`**.  
-   - Search for the parameter **`server.mcp_endpoint`**. Its current value should be `null`.  
-   - Click **`Edit`**, paste the **Control panel MCP configuration** URL you obtained earlier into the **`Parameter Value`** field, and **Save**.  
+### If You Are Using Single-Module Deployment
 
-If the save succeeds, the configuration is complete and you can test it via the agent view. If it fails, the control panel likely cannot reach the MCP endpoint—common causes are a firewall or an incorrect local IP address.  
+When the device connects, you’ll see logs similar to the following indicating success:
 
----  
+```text
+250705 -INFO-正在初始化MCP接入点: wss://2662r3426b.vicp.fun/mcp_e 
+250705 -INFO-发送MCP接入点初始化消息
+250705 -INFO-MCP接入点连接成功
+250705 -INFO-MCP接入点初始化成功
+250705 -INFO-统一工具处理器初始化完成
+250705 -INFO-MCP接入点服务器信息: name=Calculator, version=1.9.4
+250705 -INFO-MCP接入点支持的工具数量: 1
+250705 -INFO-所有MCP接入点工具已获取，客户端准备就绪
+250705 -INFO-工具缓存已刷新
+250705 -INFO-当前支持的函数列表: [ 'get_time', 'get_lunar', 'play_music', 'get_weather', 'handle_exit_intent', 'calculator']
+```
 
-## 3️⃣ Configuring the MCP Endpoint for Single‑Module Deployments  
+or
 
-1. **Locate the configuration file**  
-   - Find your configuration file at `data/.config.yaml`.  
-   - Search for `mcp_endpoint`. If it does not exist, add it.  
+```text
+250705 -INFO-Initializing MCP endpoint: wss://2662r3426b.vicp.fun/mcp_e 
+250705 -INFO-Sending MCP endpoint initialization message
+250705 -INFO-MCP endpoint connection successful
+250705 -INFO-MCP endpoint initialization successful
+250705 -INFO-Unified tool processor initialization completed
+250705 -INFO-MCP endpoint server info: name=Calculator, version=1.9.4
+250705 -INFO-Number of tools supported by MCP endpoint: 1
+250705 -INFO-All MCP endpoint tools have been retrieved, client is ready
+250705 -INFO-Tool cache has been refreshed
+250705 -INFO-Current supported functions list: [ 'get_time', 'get_lunar', 'play_music', 'get_weather', 'handle_exit_intent', 'calculator']
+```
 
-2. **Add / modify the `mcp_endpoint` entry**  
-
-   Example (replace placeholders with your actual values):  
-
-   ```yaml
-   server:
-     websocket: ws://your-ip-or-domain:port/xiaozhi/v1/
-     http_port: 8002
-     log:
-       log_level: INFO
-
-   # ... other configurations ...
-
-   mcp_endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=def   # <-- paste the single‑module endpoint URL here
-   ```
-
-3. **Start the single‑module service**  
-
-   After editing, when you start the service you should see logs similar to:  
-
-   ```
-   250705[__main__]-INFO-Initializing component: vad successfully (SileroVAD)
-   250705[__main__]-INFO-Initializing component: asr successfully (FunASRServer)
-   250705[__main__]-INFO-OTA interface: http://192.168.1.25:8002/xiaozhi/ota/
-   250705[__main__]-INFO-Visual analysis interface: http://192.168.1.25:8002/mcp/vision/explain
-   250705[__main__]-INFO-MCP endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc
-   250705[__main__]-INFO-Websocket address: ws://192.168.1.25:8000/xiaozhi/v1/
-   250705[__main__]-INFO-=======The above address is a WebSocket URL; do NOT open it in a browser=======
-   250705[__main__]-INFO-If you want to test the WebSocket, open test_page.html in the test directory with Google Chrome
-   250705[__main__]-INFO-=============================================================
-   ```
-
-   The line `mcp_endpoint: ws://192.168.1.25:8004/mcp_endpoint/mcp/?token=abc` confirms that the endpoint has been correctly configured.  
-
----  
-
-### Quick Recap  
-
-| Deployment Type | Where to Configure | URL to Use |
-|-----------------|-------------------|------------|
-| **Full‑module** | Control panel → Parameter Management → `server.mcp_endpoint` | `http://<your‑LAN‑IP>:8004/mcp_endpoint/health?key=abc` |
-| **Single‑module** | `data/.config.yaml` → `mcp_endpoint` field | `ws://<your‑LAN‑IP>:8004/mcp_endpoint/mcp/?token=def` |
-
-After completing the appropriate steps, your MCP endpoint will be ready for use.  
+If the list includes `'calculator'`, the device will be able to invoke the calculator tool based on intent recognition.

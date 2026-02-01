@@ -35,7 +35,7 @@ class AsyncVisionPerformanceTester:
         try:
             # 检查API密钥配置
             if "api_key" in config and any(
-                x in config["api_key"] for x in ["你的", "placeholder", "sk-xxx"]
+                x in config["api_key"] for x in ["你的", "your", "placeholder", "sk-xxx"]
             ):
                 print(f"⏭️  VLLM {vllm_name} 未配置api_key，已跳过")
                 return {"name": vllm_name, "type": "vllm", "errors": 1}
@@ -158,7 +158,7 @@ class AsyncVisionPerformanceTester:
         if self.config.get("VLLM") is not None:
             for vllm_name, config in self.config.get("VLLM", {}).items():
                 if "api_key" in config and any(
-                    x in config["api_key"] for x in ["你的", "placeholder", "sk-xxx"]
+                    x in config["api_key"] for x in ["你的", "your","placeholder", "sk-xxx"]
                 ):
                     print(f"⏭️  VLLM {vllm_name} 未配置api_key，已跳过")
                     continue

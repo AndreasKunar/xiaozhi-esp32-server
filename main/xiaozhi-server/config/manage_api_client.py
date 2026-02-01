@@ -40,7 +40,7 @@ class ManageApiClient:
         if not cls.config.get("url") or not cls.config.get("secret"):
             raise Exception("manager-api的url或secret配置错误")
 
-        if "你" in cls.config.get("secret"):
+        if "you" in cls.config.get("secret") or "你" in cls.config.get("secret"):  # default placeholder check
             raise Exception("请先配置manager-api的secret")
 
         cls._secret = cls.config.get("secret")

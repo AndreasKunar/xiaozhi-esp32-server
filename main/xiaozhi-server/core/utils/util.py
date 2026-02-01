@@ -131,7 +131,7 @@ def remove_punctuation_and_length(text):
 
 
 def check_model_key(modelType, modelKey):
-    if "你" in modelKey:
+    if "you" in modelKey or "你" in modelKey:   # is the default placeholder
         return f"配置错误: {modelType} 的 API key 未设置,当前值为: {modelKey}"
     return None
 
@@ -514,17 +514,17 @@ def filter_sensitive_info(config: dict) -> dict:
 
 
 def get_vision_url(config: dict) -> str:
-    """获取 vision URL
+    """Get vision URL
 
     Args:
-        config: 配置字典
+        config: Configuration Dictionary
 
     Returns:
         str: vision URL
     """
     server_config = config["server"]
     vision_explain = server_config.get("vision_explain", "")
-    if "你的" in vision_explain:
+    if "your" in vision_explain or "你的" in vision_explain:  # is the default placeholder
         local_ip = get_local_ip()
         port = int(server_config.get("http_port", 8003))
         vision_explain = f"http://{local_ip}:{port}/mcp/vision/explain"
@@ -533,15 +533,14 @@ def get_vision_url(config: dict) -> str:
 
 def is_valid_image_file(file_data: bytes) -> bool:
     """
-    检查文件数据是否为有效的图片格式
+    Check if the file data is a valid image format
 
     Args:
-        file_data: 文件的二进制数据
-
+        file_data: File binary data
     Returns:
-        bool: 如果是有效的图片格式返回True，否则返回False
+        bool: True if the file data is a valid image format, False otherwise
     """
-    # 常见图片格式的魔数（文件头）
+    # Common image format magic numbers (file headers)
     image_signatures = {
         b"\xff\xd8\xff": "JPEG",
         b"\x89PNG\r\n\x1a\n": "PNG",
@@ -553,7 +552,7 @@ def is_valid_image_file(file_data: bytes) -> bool:
         b"RIFF": "WEBP",
     }
 
-    # 检查文件头是否匹配任何已知的图片格式
+    # Check if the file header matches any known image format
     for signature in image_signatures:
         if file_data.startswith(signature):
             return True
@@ -563,29 +562,28 @@ def is_valid_image_file(file_data: bytes) -> bool:
 
 def sanitize_tool_name(name: str) -> str:
     """Sanitize tool names for OpenAI compatibility."""
-    # 支持中文、英文字母、数字、下划线和连字符
+    # Supports Chinese characters, English letters, numbers, underscores, and hyphens.
     return re.sub(r"[^a-zA-Z0-9_\-\u4e00-\u9fff]", "_", name)
 
 
 def validate_mcp_endpoint(mcp_endpoint: str) -> bool:
     """
-    校验MCP接入点格式
+    Verify MCP access point format
 
     Args:
-        mcp_endpoint: MCP接入点字符串
-
+        mcp_endpoint: MCP access point string
     Returns:
-        bool: 是否有效
+        bool: Validity status
     """
-    # 1. 检查是否以ws开头
+    # 1. Check if it starts with ws
     if not mcp_endpoint.startswith("ws"):
         return False
 
-    # 2. 检查是否包含key、call字样
+    # 2. Check if it contains "key" or "call"
     if "key" in mcp_endpoint.lower() or "call" in mcp_endpoint.lower():
         return False
 
-    # 3. 检查是否包含/mcp/字样
+    # 3. Check if it contains "/mcp/"
     if "/mcp/" not in mcp_endpoint:
         return False
 
