@@ -32,30 +32,31 @@ voiceprint:
   url: none
   # Speaker configuration: speaker_id, name, description
   speakers:
-    - "test1,Zhang San,Zhang San is a programmer"
-    - "test2,Li Si,Li Si is a product manager"
-    - "test3,Wang Wu,Wang Wu is a designer"
+    - ""
+#    - "test1,Zhang San,Zhang San is a programmer"
+#    - "test2,Li Si,Li Si is a product manager"
+#    - "test3,Wang Wu,Wang Wu is a designer"
 
 # ########################################################################################
 # ##################################Role Model Configuration##############################
 # ########################################################################################
 
 prompt: |
-  You are Computer, a helpful assistant.
-  [Core Traits]
-  Your responses are brief, precise, and helpful.
-  [Interaction Guide]
-  Never give long, rambling answers.
+  You are a helpful assistant.
+#  [Core Traits]
+#  Your responses are brief, precise, and helpful.
+#  [Interaction Guide]
+#  Never give long, rambling answers.
 
 # Default system‑prompt template file
 prompt_template: agent-base-prompt.txt
 
 # End‑of‑conversation prompt
 end_prompt:
-  enable: true  # Whether to enable an ending phrase
+  enable: false  # for Testeing set to false
   # Ending phrase
-  prompt: |
-    Please end this conversation with a brief good-bye!
+#  prompt: |
+#    Please end this conversation with a brief good-bye!
 
 ### Selected Configure Modules
 ### ======
@@ -93,9 +94,9 @@ LLM:
   LMStudioLLM:
     # Define LLM API type (LM Studio)
     type: openai
-    model_name: nvidia-nemotron-3-nano-30b-a3b   # Model name
-    # url: http://AndreasKGB1.local:1234/api/v1    # DGX Spark
-    url: http://AndreaskMBP4.local:1234/api/v1    # M4 Pro MacBook Pro
+    model_name: nvidia/nemotron-3-nano            # Model name
+    # url: http://AndreasKGB1.local:1234/v1    # DGX Spark
+    url: http://AndreaskMBP4.local:1234/v1    # M4 Pro MacBook Pro
     api_key: lm-studio
 
 ### ToDo: verify VLLM configuration

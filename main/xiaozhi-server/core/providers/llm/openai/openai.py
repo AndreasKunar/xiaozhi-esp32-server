@@ -39,7 +39,7 @@ class LLMProvider(LLMProviderBase):
                 setattr(self, param, None)
 
         logger.debug(
-            f"意图识别参数初始化: {self.temperature}, {self.max_tokens}, {self.top_p}, {self.frequency_penalty}"
+            f"Intent recognition parameter initialization: {self.temperature}, {self.max_tokens}, {self.top_p}, {self.frequency_penalty}"
         )
 
         model_key_msg = check_model_key("LLM", self.api_key)
@@ -49,7 +49,7 @@ class LLMProvider(LLMProviderBase):
 
     @staticmethod
     def normalize_dialogue(dialogue):
-        """自动修复 dialogue 中缺失 content 的消息"""
+        """Automatically fix messages in dialogue missing content"""
         for msg in dialogue:
             if "role" in msg and "content" not in msg:
                 msg["content"] = ""
@@ -65,7 +65,7 @@ class LLMProvider(LLMProviderBase):
                 "stream": True,
             }
 
-            # 添加可选参数,只有当参数不为None时才添加
+            # Add optional parameters, only add when the parameter is not None
             optional_params = {
                 "max_tokens": kwargs.get("max_tokens", self.max_tokens),
                 "temperature": kwargs.get("temperature", self.temperature),
@@ -132,11 +132,11 @@ class LLMProvider(LLMProviderBase):
                 elif isinstance(getattr(chunk, "usage", None), CompletionUsage):
                     usage_info = getattr(chunk, "usage", None)
                     logger.bind(tag=TAG).info(
-                        f"Token 消耗：输入 {getattr(usage_info, 'prompt_tokens', '未知')}，"
-                        f"输出 {getattr(usage_info, 'completion_tokens', '未知')}，"
-                        f"共计 {getattr(usage_info, 'total_tokens', '未知')}"
+                        f"Token Consumption: Input {getattr(usage_info, 'prompt_tokens', 'unknown')}, "
+                        f"Output {getattr(usage_info, 'completion_tokens', 'unknown')}, "
+                        f"Total {getattr(usage_info, 'total_tokens', 'unknown')}"
                     )
 
         except Exception as e:
             logger.bind(tag=TAG).error(f"Error in function call streaming: {e}")
-            yield f"【OpenAI服务响应异常: {e}】", None
+            yield f"【OpenAI service response error: {e}】", None
